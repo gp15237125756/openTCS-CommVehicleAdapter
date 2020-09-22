@@ -1,0 +1,8 @@
+rootProject.name = 'openTCS-TcsHydrogen'
+
+include 'openTCS-TcsHydrogen-Kernel'
+include 'openTCS-TcsHydrogen-KernelControlCenter'
+include 'openTCS-TcsHydrogen-PlantOverview'
+include 'openTCS-TcsHydrogen-Documentation'
+include 'openTCS-TcsHydrogen-Common'
+include 'openTCS-TcsHydrogen-CommAdapter-Vehicle'
