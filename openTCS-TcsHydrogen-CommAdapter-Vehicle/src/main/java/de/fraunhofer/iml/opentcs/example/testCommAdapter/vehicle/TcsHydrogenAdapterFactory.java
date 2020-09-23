@@ -1,7 +1,7 @@
-package de.fraunhofer.iml.opentcs.example.commadapter.vehicle;
+package de.fraunhofer.iml.opentcs.example.testCommAdapter.vehicle;
 
-import de.fraunhofer.iml.opentcs.example.commadapter.vehicle.exchange.TcsHydrogenAdapterDescription;
 import de.fraunhofer.iml.opentcs.example.common.VehicleProperties;
+import de.fraunhofer.iml.opentcs.example.testCommAdapter.vehicle.exchange.TcsHydrogenAdapterDescription;
 import org.opentcs.data.model.Vehicle;
 import org.opentcs.drivers.vehicle.VehicleCommAdapter;
 import org.opentcs.drivers.vehicle.VehicleCommAdapterDescription;
@@ -41,23 +41,6 @@ public class TcsHydrogenAdapterFactory implements VehicleCommAdapterFactory {
     @Override
     public boolean providesAdapterFor(@Nonnull Vehicle vehicle) {
         requireNonNull(vehicle, "vehicle");
-
-        if (vehicle.getProperty(PROPKEY_VEHICLE_HOST) == null) {
-            return false;
-        }
-
-        if (vehicle.getProperty(VehicleProperties.PROPKEY_VEHICLE_PORT) == null) {
-            return false;
-        }
-        try {
-            checkInRange(Integer.parseInt(vehicle.getProperty(PROPKEY_VEHICLE_PORT)),
-                    1024,
-                    65535);
-        }
-        catch (IllegalArgumentException exc) {
-            return false;
-        }
-
         return true;
     }
 
@@ -70,10 +53,6 @@ public class TcsHydrogenAdapterFactory implements VehicleCommAdapterFactory {
         }
 
         TcsHydrogenAdapter adapter = componentsFactory.createTcsCommAdapter(vehicle);
-        adapter.getProcessModel().setVehicleHost(vehicle.getProperty(PROPKEY_VEHICLE_HOST));
-        adapter.getProcessModel().setVehiclePort(
-                Integer.parseInt(vehicle.getProperty(PROPKEY_VEHICLE_PORT))
-        );
         return adapter;
     }
 

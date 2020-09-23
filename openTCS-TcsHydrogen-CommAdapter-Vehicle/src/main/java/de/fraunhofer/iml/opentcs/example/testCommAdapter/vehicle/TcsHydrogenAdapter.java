@@ -1,21 +1,15 @@
-package de.fraunhofer.iml.opentcs.example.commadapter.vehicle;
+package de.fraunhofer.iml.opentcs.example.testCommAdapter.vehicle;
 
 import com.google.inject.assistedinject.Assisted;
+import de.fraunhofer.iml.opentcs.example.commadapter.vehicle.TcsProcessModel;
 import de.fraunhofer.iml.opentcs.example.commadapter.vehicle.exchange.TcsProcessModelTO;
-import de.fraunhofer.iml.opentcs.example.commadapter.vehicle.telegrams.OrderRequest;
 import de.fraunhofer.iml.opentcs.example.commadapter.vehicle.telegrams.StateResponse;
 import de.fraunhofer.iml.opentcs.example.common.dispatching.LoadAction;
-import de.fraunhofer.iml.opentcs.example.common.telegrams.BoundedCounter;
-import de.fraunhofer.iml.opentcs.example.common.telegrams.Request;
-import de.fraunhofer.iml.opentcs.example.common.telegrams.Response;
-import de.fraunhofer.iml.opentcs.example.common.telegrams.TelegramSender;
-import org.opentcs.contrib.tcp.netty.ConnectionEventListener;
 import org.opentcs.customizations.kernel.KernelExecutor;
 import org.opentcs.data.model.Vehicle;
-import org.opentcs.data.order.DriveOrder;
+import org.opentcs.data.order.Route;
 import org.opentcs.drivers.vehicle.BasicVehicleCommAdapter;
 import org.opentcs.drivers.vehicle.MovementCommand;
-import org.opentcs.drivers.vehicle.VehicleProcessModel;
 import org.opentcs.drivers.vehicle.management.VehicleProcessModelTO;
 import org.opentcs.util.ExplainedBoolean;
 import org.slf4j.Logger;
@@ -24,20 +18,22 @@ import org.slf4j.LoggerFactory;
 import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
 import javax.inject.Inject;
-import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.Executor;
 import java.util.concurrent.ExecutorService;
 
-import static de.fraunhofer.iml.opentcs.example.common.telegrams.BoundedCounter.UINT16_MAX_VALUE;
 import static java.util.Objects.requireNonNull;
 
 public class TcsHydrogenAdapter  extends BasicVehicleCommAdapter {
 
     private static final Logger LOG = LoggerFactory.getLogger(TcsHydrogenAdapter.class);
 
+    private TcsHydrogenAdapterComponentsFactory tcsHydrogenAdapterComponentsFactory;
+
+    private Vehicle vehicle;
+
+    private boolean initialized;
     /**
      * The kernel's executor service.
      */
@@ -52,20 +48,52 @@ public class TcsHydrogenAdapter  extends BasicVehicleCommAdapter {
      * @param kernelExecutor
      */
     @Inject
-    public TcsHydrogenAdapter(@Assisted Vehicle vehicle,
+    public TcsHydrogenAdapter(@Assisted Vehicle vehicle,TcsHydrogenAdapterComponentsFactory factory,
                           @KernelExecutor ExecutorService kernelExecutor) {
-        super(new TcsProcessModel(vehicle), 3, 2, LoadAction.CHARGE, kernelExecutor);
+        super(new TestVehicleModel(vehicle), 3, 2, LoadAction.CHARGE, kernelExecutor);
         this.kernelExecutor = requireNonNull(kernelExecutor, "kernelExecutor");
+        this.tcsHydrogenAdapterComponentsFactory = factory;
+        this.vehicle = vehicle;
+    }
+
+    protected void runActualTask() {
+        try {
+            //获取状态  位置  速度  反向
+            final MovementCommand curCommand;
+            synchronized (TcsHydrogenAdapter.this) {
+                curCommand = getSentQueue().peek();
+            }
+            final Route.Step curStep = curCommand.getStep();
+            //运行Step，略
+            if (!curCommand.isWithoutOperation()) {
+                //运行操作（上料或者下料，略）
+            }
+            if (getSentQueue().size() <= 1 && getCommandQueue().isEmpty()) {
+                getProcessModel().setVehicleState(Vehicle.State.IDLE);
+            }
+            //更新UI
+            synchronized (TcsHydrogenAdapter.this) {
+                MovementCommand sentCmd = getSentQueue().poll();
+                if (sentCmd != null && sentCmd.equals(curCommand)) {
+                    getProcessModel().commandExecuted(curCommand);
+                    TcsHydrogenAdapter.this.notify();
+                }
+            }
+        }
+        catch (Exception ex) {
+        }
     }
 
     @Override
     protected void connectVehicle() {
         System.out.println("连接next小车");
+        //connectVehicle();
     }
 
     @Override
     protected void disconnectVehicle() {
         System.out.println("断开next小车");
+        //disconnectVehicle();
     }
 
     @Override
@@ -81,13 +109,23 @@ public class TcsHydrogenAdapter  extends BasicVehicleCommAdapter {
     }
 
     @Override
-    public synchronized ExplainedBoolean canProcess(List<String> operations) {
+    public final TestVehicleModel getProcessModel() {
+        return (TestVehicleModel) super.getProcessModel();
+    }
+
+    @Nonnull
+    @Override
+    public ExplainedBoolean canProcess(@Nonnull List<String> operations) {
         requireNonNull(operations, "operations");
         boolean canProcess = true;
         String reason = "";
         if (!isEnabled()) {
             canProcess = false;
             reason = "Adapter not enabled";
+        }
+        if (canProcess && !isVehicleConnected()) {
+            canProcess = false;
+            reason = "Vehicle does not seem to be connected";
         }
         return new ExplainedBoolean(canProcess, reason);
     }
@@ -97,29 +135,4 @@ public class TcsHydrogenAdapter  extends BasicVehicleCommAdapter {
         System.out.println("给next小车发送命令");
     }
 
-    @Override
-    public final TcsProcessModel getProcessModel() {
-        return (TcsProcessModel) super.getProcessModel();
-    }
-
-    @Override
-    protected VehicleProcessModelTO createCustomTransferableProcessModel() {
-        //Add extra information of the vehicle when sending to other software like control center or
-        //plant overview
-        return new TcsProcessModelTO()
-                .setVehicleRef(getProcessModel().getVehicleReference())
-                .setCurrentState(getProcessModel().getCurrentState())
-                .setPreviousState(getProcessModel().getPreviousState())
-                .setLastOrderSent(getProcessModel().getLastOrderSent())
-                .setDisconnectingOnVehicleIdle(getProcessModel().isDisconnectingOnVehicleIdle())
-                .setLoggingEnabled(getProcessModel().isLoggingEnabled())
-                .setReconnectDelay(getProcessModel().getReconnectDelay())
-                .setReconnectingOnConnectionLoss(getProcessModel().isReconnectingOnConnectionLoss())
-                .setVehicleHost(getProcessModel().getVehicleHost())
-                .setVehicleIdle(getProcessModel().isVehicleIdle())
-                .setVehicleIdleTimeout(getProcessModel().getVehicleIdleTimeout())
-                .setVehiclePort(getProcessModel().getVehiclePort())
-                .setPeriodicStateRequestEnabled(getProcessModel().isPeriodicStateRequestEnabled())
-                .setStateRequestInterval(getProcessModel().getStateRequestInterval());
-    }
 }

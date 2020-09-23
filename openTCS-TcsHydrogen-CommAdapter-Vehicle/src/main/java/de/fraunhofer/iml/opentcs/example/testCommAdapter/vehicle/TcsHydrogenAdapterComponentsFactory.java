@@ -1,7 +1,7 @@
 /**
  * Copyright (c) Fraunhofer IML
  */
-package de.fraunhofer.iml.opentcs.example.commadapter.vehicle;
+package de.fraunhofer.iml.opentcs.example.testCommAdapter.vehicle;
 
 import de.fraunhofer.iml.opentcs.example.common.telegrams.RequestResponseMatcher;
 import de.fraunhofer.iml.opentcs.example.common.telegrams.StateRequesterTask;
@@ -31,7 +31,7 @@ public interface TcsHydrogenAdapterComponentsFactory {
    * @param telegramSender Sends telegrams/requests.
    * @return The created {@link RequestResponseMatcher}.
    */
-  RequestResponseMatcher createRequestResponseMatcher(TelegramSender telegramSender);
+  //RequestResponseMatcher createRequestResponseMatcher(TelegramSender telegramSender);
 
   /**
    * Creates a new {@link StateRequesterTask}.
@@ -39,5 +39,5 @@ public interface TcsHydrogenAdapterComponentsFactory {
    * @param stateRequestAction The actual action to be performed to enqueue requests.
    * @return The created {@link StateRequesterTask}.
    */
-  StateRequesterTask createStateRequesterTask(ActionListener stateRequestAction);
+  //StateRequesterTask createStateRequesterTask(ActionListener stateRequestAction);
 }

@@ -4,6 +4,8 @@
 package de.fraunhofer.iml.opentcs.example.commadapter.vehicle;
 
 import com.google.inject.assistedinject.FactoryModuleBuilder;
+import de.fraunhofer.iml.opentcs.example.testCommAdapter.vehicle.TcsHydrogenAdapterComponentsFactory;
+import de.fraunhofer.iml.opentcs.example.testCommAdapter.vehicle.TcsHydrogenAdapterFactory;
 import org.opentcs.customizations.kernel.KernelInjectionModule;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -25,8 +27,9 @@ public class TcsKernelInjectionModule
       return;
     }
     
-    //install(new FactoryModuleBuilder().build(TcsAdapterComponentsFactory.class));
-    //vehicleCommAdaptersBinder().addBinding().to(TcsCommAdapterFactory.class);
+    install(new FactoryModuleBuilder().build(TcsAdapterComponentsFactory.class));
+    vehicleCommAdaptersBinder().addBinding().to(TcsCommAdapterFactory.class);
+
     install(new FactoryModuleBuilder().build(TcsHydrogenAdapterComponentsFactory.class));
     vehicleCommAdaptersBinder().addBinding().to(TcsHydrogenAdapterFactory.class);
 

@@ -1,11 +1,9 @@
 /**
  * Copyright (c) Fraunhofer IML
  */
-package de.fraunhofer.iml.opentcs.example.commadapter.vehicle.exchange;
+package de.fraunhofer.iml.opentcs.example.testCommAdapter.vehicle.exchange;
 
 import org.opentcs.drivers.vehicle.VehicleCommAdapterDescription;
-
-import java.util.ResourceBundle;
 
 /**
  * The comm adapter's {@link VehicleCommAdapterDescription}.
